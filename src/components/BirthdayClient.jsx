@@ -84,18 +84,57 @@ export default function BirthdayClient() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-300 to-purple-300 text-gray-900 relative p-6">
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-400 via-yellow-100 to-purple-400 text-gray-900 relative p-6 overflow-hidden">
       <style>{`
-        .card-outer{perspective:800px}
-        .card-inner{transition:transform .5s;transform-style:preserve-3d}
-        .card-face{backface-visibility:hidden}
-        .card-back{transform:rotateY(180deg)}
+        /* Card flip */
+        .card-outer{perspective:1000px}
+        .card-inner{transition:transform .55s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+        .card-face{backface-visibility:hidden;border-radius:12px}
+        .card-front{background:linear-gradient(180deg,#fde68a,#fb923c);}
+        .card-back{transform:rotateY(180deg);background:white}
         .flipped .card-inner{transform:rotateY(180deg)}
-        @keyframes floatUp{0%{transform:translateY(0)}100%{transform:translateY(-12px)}}
-        .float{animation:floatUp 2s ease-in-out infinite}
-        @keyframes fall{0%{transform:translateY(-10vh) rotate(0)}100%{transform:translateY(110vh) rotate(360deg)}}
-        .conf{position:absolute;width:10px;height:14px;opacity:0.9;top:-10vh;animation:fall 3s linear forwards}
+
+        /* subtle bounce for CTA */
+        @keyframes pulseFast{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+        .cta-pulse{animation:pulseFast 1.6s ease-in-out infinite}
+
+        /* balloon float */
+        @keyframes floatUp{0%{transform:translateY(0)}50%{transform:translateY(-8px)}100%{transform:translateY(0)}}
+        .balloon{animation:floatUp 3.5s ease-in-out infinite}
+
+        /* confetti */
+        @keyframes confettiFall{0%{transform:translateY(-30vh) rotate(0)}100%{transform:translateY(120vh) rotate(540deg)}}
+        .conf{position:absolute;width:10px;height:14px;opacity:0.95;top:-30vh;animation:confettiFall 4s linear forwards}
+
+        /* greeting open transition */
+        .card-enter{opacity:0;transform:translateY(12px) scale(.98)}
+        .card-enter-active{opacity:1;transform:translateY(0) scale(1);transition:all .45s ease}
+
+        @media (max-width:640px){.card-inner{height:72px}}
       `}</style>
+
+      {/* decorative balloons */}
+      <div className="pointer-events-none absolute left-6 top-6 space-y-2">
+        <div className="balloon transform -translate-x-2">🎈</div>
+        <div className="balloon transform translate-x-2">🎈</div>
+      </div>
+
+      {/* subtle background shapes for depth */}
+      <div className="absolute inset-0 -z-10 opacity-30">
+        <svg
+          className="w-full h-full"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <linearGradient id="g1" x1="0" x2="1">
+              <stop offset="0" stopColor="#fff7ed" />
+              <stop offset="1" stopColor="#fbe7ff" />
+            </linearGradient>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#g1)" />
+        </svg>
+      </div>
 
       {stage === "welcome" && (
         <div className="text-center max-w-2xl bg-white/70 backdrop-blur rounded-2xl p-10 shadow-lg">
@@ -128,11 +167,11 @@ export default function BirthdayClient() {
                   className={`card-outer ${isFlipped ? "flipped" : ""}`}
                   onClick={() => handleCardClick(idx)}
                 >
-                  <div className="card-inner relative w-full h-24 bg-transparent">
-                    <div className="card-face card-front absolute inset-0 flex items-center justify-center rounded-lg bg-pink-200 shadow">
-                      ❓
+                  <div className="card-inner relative w-full h-28 bg-transparent">
+                    <div className="card-face card-front absolute inset-0 flex items-center justify-center rounded-lg shadow-lg text-xl">
+                      <div className="text-2xl">❓</div>
                     </div>
-                    <div className="card-face card-back absolute inset-0 flex items-center justify-center rounded-lg bg-white text-2xl shadow card-back">
+                    <div className="card-face card-back absolute inset-0 flex items-center justify-center rounded-lg shadow-lg text-4xl card-back">
                       {c.icon}
                     </div>
                   </div>
@@ -224,6 +263,27 @@ export default function BirthdayClient() {
               className="bg-gray-200 px-5 py-2 rounded-full"
             >
               Kirim Terima Kasih
+            </button>
+          </div>
+
+          <div className="mt-4 flex items-center justify-center space-x-2">
+            <input
+              id="shareName"
+              placeholder="Nama pengirim"
+              defaultValue={fromName}
+              className="px-3 py-2 rounded-md border w-48"
+            />
+            <button
+              onClick={() => {
+                const input = document.getElementById("shareName");
+                const name = input && input.value ? input.value : fromName;
+                const url = `${window.location.origin}${window.location.pathname}?from=${encodeURIComponent(name)}`;
+                navigator.clipboard && navigator.clipboard.writeText(url);
+                alert("Link disalin: " + url);
+              }}
+              className="px-4 py-2 rounded-full bg-blue-500 text-white"
+            >
+              Salin Link
             </button>
           </div>
         </div>
