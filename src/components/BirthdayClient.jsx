@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 export default function BirthdayClient() {
   const searchParams = useSearchParams();
   const fromName = searchParams.get("from") || "Seseorang";
+  const charSlug = searchParams.get("char") || null;
 
   const [stage, setStage] = useState("welcome"); // welcome | game | greeting | greeting-open | reply
   const [cards, setCards] = useState([]);
@@ -13,6 +14,11 @@ export default function BirthdayClient() {
   const [matched, setMatched] = useState([]);
   const [busy, setBusy] = useState(false);
   const [reply, setReply] = useState("");
+  const [muted, setMuted] = useState(false);
+  const bgRef = useRef(null);
+  const sfxClickRef = useRef(null);
+  const sfxOpenRef = useRef(null);
+  const sfxSendRef = useRef(null);
 
   // sample icons for cards (8 pairs -> 16 cards)
   const icons = ["🎈", "🎂", "🎁", "🎉", "🕯️", "🍭", "🎊", "🍩"];
@@ -45,6 +51,14 @@ export default function BirthdayClient() {
     if (busy) return;
     if (flipped.includes(index) || matched.includes(index)) return;
 
+    // play click sound
+    try {
+      if (sfxClickRef.current && !muted) {
+        sfxClickRef.current.currentTime = 0;
+        sfxClickRef.current.play().catch(() => {});
+      }
+    } catch (e) {}
+
     const newFlipped = [...flipped, index];
     setFlipped(newFlipped);
 
@@ -57,6 +71,17 @@ export default function BirthdayClient() {
         setFlipped([]);
         // if finished
         if (matched.length + 2 >= cards.length) {
+          // play celebrate/open sound
+          try {
+            if (sfxOpenRef.current && !muted) {
+              sfxOpenRef.current.currentTime = 0;
+              sfxOpenRef.current.play().catch(() => {});
+            }
+            if (bgRef.current && !muted) {
+              bgRef.current.currentTime = 0;
+              bgRef.current.play().catch(() => {});
+            }
+          } catch (e) {}
           setTimeout(() => setStage("greeting"), 700);
         }
       } else {
@@ -79,6 +104,13 @@ export default function BirthdayClient() {
 
   function sendWA() {
     const msg = reply.trim() || `Makasih banyak ya ${fromName} ❤️✨`;
+    // play send sfx then open WA
+    try {
+      if (sfxSendRef.current && !muted) {
+        sfxSendRef.current.currentTime = 0;
+        sfxSendRef.current.play().catch(() => {});
+      }
+    } catch (e) {}
     const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   }
@@ -113,6 +145,20 @@ export default function BirthdayClient() {
         @media (max-width:640px){.card-inner{height:72px}}
       `}</style>
 
+      {/* audio elements (put sound files in public/sounds/) */}
+      <audio ref={bgRef} loop preload="auto">
+        <source src="/music/birthday.mp3" type="audio/mpeg" />
+      </audio>
+      <audio ref={sfxClickRef} preload="auto">
+        <source src="/sounds/click.mp3" type="audio/mpeg" />
+      </audio>
+      <audio ref={sfxOpenRef} preload="auto">
+        <source src="/sounds/open.mp3" type="audio/mpeg" />
+      </audio>
+      <audio ref={sfxSendRef} preload="auto">
+        <source src="/sounds/send.mp3" type="audio/mpeg" />
+      </audio>
+
       {/* decorative balloons */}
       <div className="pointer-events-none absolute left-6 top-6 space-y-2">
         <div className="balloon transform -translate-x-2">🎈</div>
@@ -138,18 +184,71 @@ export default function BirthdayClient() {
 
       {stage === "welcome" && (
         <div className="text-center max-w-2xl bg-white/70 backdrop-blur rounded-2xl p-10 shadow-lg">
+          <div className="mb-4 flex justify-center items-end">
+            {charSlug ? (
+              <img
+                src={`/character/${charSlug}.gif`}
+                alt={charSlug}
+                className="w-36 h-36 object-contain pointer-events-none"
+                loading="lazy"
+                onError={(e) => {
+                  if (e.currentTarget.src.includes("/character/")) {
+                    e.currentTarget.src = `/characters/${charSlug}.gif`;
+                  } else {
+                    e.currentTarget.style.display = "none";
+                  }
+                }}
+                aria-hidden="true"
+              />
+            ) : (
+              <div className="text-6xl">🎈</div>
+            )}
+          </div>
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
             🎉 Selamat Ulang Tahun!
           </h1>
           <p className="mb-6 text-lg opacity-90">
             Ada kejutan seru nih, siap main?
           </p>
-          <button
-            onClick={() => setStage("game")}
-            className="bg-pink-500 text-white px-8 py-3 rounded-full text-lg shadow hover:scale-105 transition"
-          >
-            🎁 Mulai Kejutan
-          </button>
+          <div className="flex items-center justify-center space-x-3">
+            <button
+              onClick={() => {
+                setStage("game");
+                // try to play click/open sound on start
+                try {
+                  if (sfxOpenRef.current && !muted) {
+                    sfxOpenRef.current.currentTime = 0;
+                    sfxOpenRef.current.play().catch(() => {});
+                  }
+                  if (bgRef.current && !muted) {
+                    bgRef.current.currentTime = 0;
+                    bgRef.current.play().catch(() => {});
+                  }
+                } catch (e) {}
+              }}
+              className="bg-pink-500 text-white px-8 py-3 rounded-full text-lg shadow hover:scale-105 transition"
+            >
+              🎁 Mulai Kejutan
+            </button>
+            <button
+              onClick={() => {
+                setMuted((m) => {
+                  const next = !m;
+                  try {
+                    if (bgRef.current) {
+                      if (next) bgRef.current.pause();
+                      else bgRef.current.play().catch(() => {});
+                    }
+                  } catch (e) {}
+                  return next;
+                });
+              }}
+              className="bg-white/80 text-pink-600 px-4 py-2 rounded-full text-sm shadow"
+              aria-pressed={!muted}
+            >
+              {muted ? "🔇" : "🔊"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -204,7 +303,19 @@ export default function BirthdayClient() {
               Tidak
             </button>
             <button
-              onClick={() => setStage("greeting-open")}
+              onClick={() => {
+                try {
+                  if (sfxOpenRef.current && !muted) {
+                    sfxOpenRef.current.currentTime = 0;
+                    sfxOpenRef.current.play().catch(() => {});
+                  }
+                  if (bgRef.current && !muted) {
+                    bgRef.current.currentTime = 0;
+                    bgRef.current.play().catch(() => {});
+                  }
+                } catch (e) {}
+                setStage("greeting-open");
+              }}
               className="px-6 py-2 rounded-full bg-pink-500 text-white"
             >
               Ya
@@ -277,7 +388,9 @@ export default function BirthdayClient() {
               onClick={() => {
                 const input = document.getElementById("shareName");
                 const name = input && input.value ? input.value : fromName;
-                const url = `${window.location.origin}${window.location.pathname}?from=${encodeURIComponent(name)}`;
+                const char = charSlug;
+                let url = `${window.location.origin}${window.location.pathname}?from=${encodeURIComponent(name)}`;
+                if (char) url += `&char=${encodeURIComponent(char)}`;
                 navigator.clipboard && navigator.clipboard.writeText(url);
                 alert("Link disalin: " + url);
               }}
@@ -286,6 +399,25 @@ export default function BirthdayClient() {
               Salin Link
             </button>
           </div>
+          {/* show character in greeting if available */}
+          {charSlug && (
+            <div className="mt-6 flex justify-center">
+              <img
+                src={`/character/${charSlug}.gif`}
+                alt={charSlug}
+                className="w-40 h-40 object-contain"
+                loading="lazy"
+                onError={(e) => {
+                  if (e.currentTarget.src.includes("/character/")) {
+                    e.currentTarget.src = `/characters/${charSlug}.gif`;
+                  } else {
+                    e.currentTarget.style.display = "none";
+                  }
+                }}
+                aria-hidden="false"
+              />
+            </div>
+          )}
         </div>
       )}
 
