@@ -7,6 +7,7 @@ export default function BirthdayClient() {
   const searchParams = useSearchParams();
   const fromName = searchParams.get("from") || "Seseorang";
   const charSlug = searchParams.get("char") || null;
+  const [selectedChar, setSelectedChar] = useState(charSlug);
 
   const [stage, setStage] = useState("welcome"); // welcome | game | greeting | greeting-open | reply
   const [cards, setCards] = useState([]);
@@ -22,6 +23,21 @@ export default function BirthdayClient() {
 
   // sample icons for cards (8 pairs -> 16 cards)
   const icons = ["🎈", "🎂", "🎁", "🎉", "🕯️", "🍭", "🎊", "🍩"];
+
+  // available characters (slug, filename, label)
+  const availableChars = [
+    { slug: "berharap", file: "berharap.gif", label: "Berharap" },
+    { slug: "hati", file: "hati.gif", label: "Hati" },
+    { slug: "hello", file: "hello.gif", label: "Hello" },
+    { slug: "i-love-you-cute", file: "I LOVE YOU (CUTE).gif", label: "Love" },
+    { slug: "marah", file: "marah.gif", label: "Marah" },
+    { slug: "salting", file: "salting.gif", label: "Salting" },
+  ];
+
+  function fileForSlug(slug) {
+    const found = availableChars.find((c) => c.slug === slug);
+    return found ? found.file : null;
+  }
 
   useEffect(() => {
     if (stage === "game") initGame();
@@ -185,15 +201,16 @@ export default function BirthdayClient() {
       {stage === "welcome" && (
         <div className="text-center max-w-2xl bg-white/70 backdrop-blur rounded-2xl p-10 shadow-lg">
           <div className="mb-4 flex justify-center items-end">
-            {charSlug ? (
+            {selectedChar ? (
               <img
-                src={`/character/${charSlug}.gif`}
-                alt={charSlug}
-                className="w-36 h-36 object-contain pointer-events-none"
+                src={`/character/${fileForSlug(selectedChar)}`}
+                alt={selectedChar}
+                className="w-36 h-36 object-contain pointer-events-none rounded-md shadow-md"
                 loading="lazy"
                 onError={(e) => {
-                  if (e.currentTarget.src.includes("/character/")) {
-                    e.currentTarget.src = `/characters/${charSlug}.gif`;
+                  const file = fileForSlug(selectedChar);
+                  if (file && e.currentTarget.src.includes("/character/")) {
+                    e.currentTarget.src = `/characters/${file}`;
                   } else {
                     e.currentTarget.style.display = "none";
                   }
@@ -203,6 +220,29 @@ export default function BirthdayClient() {
             ) : (
               <div className="text-6xl">🎈</div>
             )}
+          </div>
+
+          {/* character selector */}
+          <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
+            {availableChars.map((c) => (
+              <button
+                key={c.slug}
+                onClick={() => setSelectedChar(c.slug)}
+                className={`p-1 rounded-md border ${selectedChar === c.slug ? "ring-2 ring-pink-400" : ""}`}
+                aria-pressed={selectedChar === c.slug}
+                title={c.label}
+              >
+                <img
+                  src={`/character/${c.file}`}
+                  alt={c.label}
+                  className="w-12 h-12 object-contain"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = `/characters/${c.file}`;
+                  }}
+                />
+              </button>
+            ))}
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
             🎉 Selamat Ulang Tahun!
