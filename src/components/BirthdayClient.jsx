@@ -377,28 +377,6 @@ export default function BirthdayClient() {
             </button>
           </div>
 
-          <div className="mt-4 flex items-center justify-center space-x-2">
-            <input
-              id="shareName"
-              placeholder="Nama pengirim"
-              defaultValue={fromName}
-              className="px-3 py-2 rounded-md border w-48"
-            />
-            <button
-              onClick={() => {
-                const input = document.getElementById("shareName");
-                const name = input && input.value ? input.value : fromName;
-                const char = charSlug;
-                let url = `${window.location.origin}${window.location.pathname}?from=${encodeURIComponent(name)}`;
-                if (char) url += `&char=${encodeURIComponent(char)}`;
-                navigator.clipboard && navigator.clipboard.writeText(url);
-                alert("Link disalin: " + url);
-              }}
-              className="px-4 py-2 rounded-full bg-blue-500 text-white"
-            >
-              Salin Link
-            </button>
-          </div>
           {/* show character in greeting if available */}
           {charSlug && (
             <div className="mt-6 flex justify-center">
